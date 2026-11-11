@@ -23,5 +23,17 @@
   "RETRIES": 2,
   "TIMEOUT_SECONDS": 90,
   "EDITOR_SHORTCUT": "Ctrl+Shift+T",
-  "BROWSER_SHORTCUT": "Ctrl+Alt+T"
+  "BROWSER_SHORTCUT": "Ctrl+Alt+T",
+  "PICTURE_FIELD": "Picture",
+  "PICTURE_PROMPT_MODEL": "gemma4:12b",
+  "PICTURE_SERVER_URL": "http://127.0.0.1:8189",
+  "PICTURE_INSTALL_DIR": "",
+  "PICTURE_EMPTY_IF_FILE_CONTAINS": "",
+  "PICTURE_IDLE_MINUTES": 10,
+  "PICTURE_ONBOARDING_SHOWN": false,
+  "PICTURE_STYLE": "simple flat vector illustration, clean thick outlines, soft pastel colors, plain white background, centered, no text",
+  "PICTURE_SIZE": 512,
+  "PICTURE_STEPS": 4,
+  "PICTURE_TAG": "picture",
+  "PICTURE_SHORTCUT": "Ctrl+Alt+P"
 }

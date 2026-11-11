@@ -1,0 +1,24 @@
+[project]
+name = "sentence-translate-picture-server"
+version = "0.1.0"
+description = "Local FLUX.1 [schnell] image server for the Sentence Translate Anki add-on"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "torch>=2.10.0,<2.11.0",
+    "diffusers>=0.36.0",
+    "transformers>=4.50",
+    "accelerate",
+    "sentencepiece",
+    "protobuf",
+    "safetensors",
+    "huggingface-hub",
+    "pillow",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

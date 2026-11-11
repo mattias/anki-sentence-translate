@@ -6,7 +6,7 @@ from aqt.operations.note import update_note
 from aqt.qt import QAction, QMessageBox, QTimer
 from aqt.utils import showInfo, showWarning, tooltip
 
-from . import engines
+from . import engines, picture_ui
 
 ADDON_NAME = "Sentence Translate"
 LANGUAGE_CODES = {
@@ -144,6 +144,13 @@ def setup_browser_menu(browser):
     browser.form.menu_Cards.addSeparator()
     browser.form.menu_Cards.addAction(action)
 
+    pic = QAction(f"Add picture of the word ({cfg().get('PICTURE_FIELD') or 'Picture'})", browser)
+    keys = cfg().get("PICTURE_SHORTCUT")
+    if keys:
+        pic.setShortcut(keys)
+    pic.triggered.connect(lambda: picture_ui.run_picture(browser))
+    browser.form.menu_Cards.addAction(pic)
+
 
 # ---- Editor: the current note ----
 
@@ -271,6 +278,7 @@ def setup_main_menu():
     action = QAction(f"{ADDON_NAME} settings...", mw)
     action.triggered.connect(open_settings)
     mw.form.menuTools.addAction(action)
+    picture_ui.setup_tools_menu()
 
 
 hooks.note_will_be_added.append(on_note_will_be_added)
@@ -278,3 +286,4 @@ gui_hooks.browser_will_show.append(setup_browser_menu)
 gui_hooks.editor_did_init_buttons.append(setup_editor_button)
 mw.addonManager.setConfigAction(__name__, open_settings)
 setup_main_menu()
+picture_ui.register_hooks()
