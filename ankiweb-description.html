@@ -1,0 +1,45 @@
+<p><b>Sentence Translate</b> translates the Japanese example sentence on your cards into natural English and puts the <b>English equivalent of the target word in bold</b>, so you see at a glance what the word means in this sentence. Made for mining cards (Kiku, Lapis and similar note types); field names are configurable.</p>
+
+<p>Example: 竜は<b>左目</b>がつぶれてる。 → The dragon has its <b>left eye</b> crushed.</p>
+
+<h3>Features</h3>
+<ul>
+<li>Browser menu: <i>Cards &gt; Translate Sentence to English</i> (<code>Ctrl+Alt+T</code>) for the selected notes. Reads <code>Sentence</code> and <code>Expression</code> and writes <code>SentenceTranslation</code>.</li>
+<li>Editor button <b>EN</b> (<code>Ctrl+Shift+T</code>) for the note you are editing or adding.</li>
+<li>Choose the engine: the <b>Claude API</b> (best quality), a local <b>Ollama</b> model (free, offline) or any <b>OpenAI-compatible</b> server such as LM Studio.</li>
+<li>Every answer is checked: it must contain exactly one bold word or phrase, in English. Otherwise the model is asked again, and a note that still fails is left unchanged.</li>
+<li>Safe: an existing translation is never replaced without asking, <code>Sentence</code> is never changed, and one undo reverts a whole browser run.</li>
+<li>Background translation with progress and cancel. Translated notes are tagged <code>translated</code>.</li>
+</ul>
+
+<h3>Getting started</h3>
+<ol>
+<li>Install the add-on and restart Anki.</li>
+<li>Open <i>Tools &gt; Add-ons &gt; Sentence Translate &gt; Config</i>. For Claude, set <code>"ENGINE": "claude"</code> and paste your API key from <a href="https://console.anthropic.com">console.anthropic.com</a> into <code>CLAUDE_API_KEY</code>. For a local model, set <code>"ENGINE": "ollama"</code> and <code>OLLAMA_MODEL</code> to a model from <code>ollama list</code>.</li>
+<li>Run <i>Tools &gt; Sentence Translate: test engine</i> to check the settings.</li>
+<li>Select 3-5 notes in the card browser and run <i>Cards &gt; Translate Sentence to English</i>. Check the result before running it on many notes.</li>
+</ol>
+
+<h3>Which engine?</h3>
+<p>Measured on 14 real mining sentences, cost per 1000 notes with the Claude API:</p>
+<ul>
+<li><code>claude-opus-5-5</code> (default): about $3.90. Best with names, wordplay and words whose meaning depends on the context.</li>
+<li><code>claude-sonnet-5-5</code>: about $2.10. Very close to Opus.</li>
+<li><code>claude-haiku-5-5</code>: about $0.11. Good for plain sentences, but bolds the wrong word more often.</li>
+</ul>
+<p>The Claude API is billed separately from a Claude.ai subscription; you buy credits in the Anthropic Console and can set a monthly limit there. Local 8-12B models (Qwen3, Gemma) are free and fine for short, simple sentences, but make more mistakes with names, long sentences and which word to bold.</p>
+
+<h3>Troubleshooting</h3>
+<ul>
+<li><b>"CLAUDE_API_KEY is empty" or HTTP 401:</b> check the key in the add-on config, and that <code>ENGINE</code> is <code>claude</code>.</li>
+<li><b>HTTP 400 about credit balance:</b> buy credits in the Anthropic Console.</li>
+<li><b>"cannot reach http://127.0.0.1:11434":</b> Ollama is not running. Start it, or switch <code>ENGINE</code>.</li>
+<li><b>Notes are skipped:</b> the note needs <code>Sentence</code>, <code>Expression</code> and <code>SentenceTranslation</code> (or the field names you set in the config), and a sentence.</li>
+<li><b>Some notes failed:</b> the model did not bold exactly one English word after several tries. Run those notes again or translate them by hand. Details are printed to the debug console.</li>
+</ul>
+<p>Source code and issues: <a href="https://github.com/mattias/anki-sentence-translate">github.com/mattias/anki-sentence-translate</a>.</p>
+
+<h3>Privacy</h3>
+<p>The sentence, target word, its reading and dictionary meaning are sent to the engine you choose: to Anthropic for Claude, or to your own computer for Ollama and LM Studio. Your API key is stored only in Anki's add-on config on your computer.</p>
+
+<p>Add-on code: MIT.</p>
