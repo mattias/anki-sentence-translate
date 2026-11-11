@@ -112,6 +112,8 @@ def run_picture(browser):
         showInfo(f"Nothing to do. Skipped {len(existing)} with a picture and {skipped} without the fields or a sentence.")
         return
 
+    scenes = set()  # notes whose word cannot be pictured: they get the sentence's scene
+
     def work(_col):
         global _server_proc
         prompts, images, failed, not_depictable = [], [], [], []
@@ -124,7 +126,7 @@ def run_picture(browser):
                 return images, failed, not_depictable
             progress(label=f"Describing {i + 1} of {total}", value=i, max=total * 2)
             try:
-                p = picture.picture_prompt(c, *inp)
+                p, kind = picture.picture_prompt(c, *inp)
             except Exception as e:
                 print(f"{TITLE}: prompt for note {nid}: {e}")
                 failed.append((nid, str(e)))
@@ -134,6 +136,8 @@ def run_picture(browser):
             if p is None:
                 not_depictable.append(nid)
             else:
+                if kind == "scene":
+                    scenes.add(nid)
                 prompts.append((nid, inp[1], p))
         picture.unload_prompt_model(c)
         if not prompts:
@@ -186,6 +190,9 @@ def run_picture(browser):
 
         def finished(_changes):
             msg = f"Added {len(images)} pictures to {field}."
+            n_scene = sum(1 for nid, *_ in images if nid in scenes)
+            if n_scene:
+                msg += f"\n{n_scene} of them show the sentence's scene, because the word itself cannot be pictured."
             if not_depictable:
                 msg += f"\n{len(not_depictable)} words could not be pictured and were left as they were."
             if failed:

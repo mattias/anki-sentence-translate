@@ -29,6 +29,7 @@
   "PICTURE_SERVER_URL": "http://127.0.0.1:8189",
   "PICTURE_INSTALL_DIR": "",
   "PICTURE_EMPTY_IF_FILE_CONTAINS": "",
+  "PICTURE_UNDEPICTABLE": "scene",
   "PICTURE_IDLE_MINUTES": 10,
   "PICTURE_ONBOARDING_SHOWN": false,
   "PICTURE_STYLE": "simple flat vector illustration, clean thick outlines, soft pastel colors, plain white background, centered, no text",

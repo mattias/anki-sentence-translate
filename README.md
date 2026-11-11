@@ -18,6 +18,19 @@ Download `sentence_translate.ankiaddon` from the [releases page](https://github.
 
 An existing translation is never replaced without asking. Every answer is checked: it must contain exactly one `<b>...</b>`, and for a non-CJK target language the bold part must not be CJK text; otherwise the model is asked again (`RETRIES`), and a note that still fails is left unchanged.
 
+## Pictures (local, optional)
+
+*Cards > Add picture of the word* (`Ctrl+Alt+P`) in the card browser draws a small picture of the target word into `Picture` for the selected notes, for example sentences from books that have no screenshot. Everything runs on your own computer:
+
+1. A local text model (`gemma4:12b` in Ollama) reads the sentence, its translation and the word, and writes a short English description of what the word means in this sentence.
+2. FLUX.1 [schnell] (Apache 2.0, fp8) draws it as a 512 px webp in a simple flat style, in about 5 seconds per picture on an RTX 4080.
+
+Words that cannot be pictured by themselves (一応, だって, あながち) get a picture of the sentence's situation instead, so the card still has a scene to remember (`PICTURE_UNDEPICTABLE`: `scene` or `leave`).
+
+Notes that already have a picture are skipped or replaced, as you choose. Images whose file name contains `PICTURE_EMPTY_IF_FILE_CONTAINS` (for example `audiobook_cover_`) count as no picture.
+
+Setup: *Tools > Sentence Translate: set up pictures...* checks Ollama and downloads the text model (about 8 GB), gets uv, installs PyTorch and diffusers (about 4 GB) into `%LOCALAPPDATA%\SentenceTranslatePictures`, and downloads FLUX.1 [schnell] in fp8 from ungated Hugging Face repos (about 17 GB, into the normal Hugging Face cache). It needs an NVIDIA GPU and [Ollama](https://ollama.com/download). The picture server starts when you make pictures, frees the GPU after 10 idle minutes and before the text model runs, and exits with Anki.
+
 ## Engines
 
 | Engine | What | Notes |

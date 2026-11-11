@@ -12,6 +12,7 @@
 <li>Every answer is checked: it must contain exactly one bold word or phrase in the target language. Otherwise the model is asked again, and a note that still fails is left unchanged.</li>
 <li>Safe: an existing translation is never replaced without asking, and <code>Sentence</code> is never changed. Rate limits are retried; a used-up daily quota is reported clearly.</li>
 <li>A settings window with a <b>Test connection</b> button. No JSON editing needed.</li>
+<li><b>New: pictures, fully local.</b> <i>Cards &gt; Add picture of the word</i> (<code>Ctrl+Alt+P</code>) draws a small picture of the target word for notes without one, such as sentences from books. A local text model (Gemma 4 12B in Ollama) describes the word's meaning in the sentence and FLUX.1 [schnell] draws it in about 5 seconds per picture. Words that cannot be pictured get the sentence's scene instead. One-time setup from <i>Tools &gt; Sentence Translate: set up pictures</i> (about 25 GB, needs an NVIDIA GPU and Ollama).</li>
 </ul>
 
 <h3>Getting started</h3>

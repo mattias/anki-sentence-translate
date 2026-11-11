@@ -38,6 +38,31 @@ EXAMPLES = [
      "a young man blushing and scratching the back of his head with an embarrassed smile"),
 ]
 
+SCENE_SYSTEM = """You write prompts for an image generator that makes small flashcard pictures for a learner of Japanese.
+
+The flashcard teaches a Japanese word that cannot be pictured by itself (a function word, an adverb, a filler or an abstract idea). Instead, the picture shows the situation of the example sentence, so that the learner remembers the moment in which the word is said.
+
+Rules:
+- Write one short English scene description (10 to 30 words) of the situation in the sentence: who is there, what they are doing, the mood, a simple setting. If someone speaks, show only the speaker's facial expression and gesture: never write what is said, and avoid the words "say", "talk", "tell", "promise", "ask", "explain" and "as if", because the image model then draws speech bubbles with text.
+- Do not try to show the target word itself, and do not add things the sentence does not suggest.
+- Use generic people ("a young woman", "an old man", "a boy"), never names of characters, real people, brands or franchises from the sentence.
+- No text, letters, numbers, speech bubbles or signs in the picture. Do not describe an art style; the style is added later.
+- Nothing gory, sexual or hateful. For violent or dark situations, show a mild, symbolic scene.
+
+Answer only with JSON: {"prompt": "..."}"""
+
+SCENE_SCHEMA = {
+    "type": "object",
+    "properties": {"prompt": {"type": "string"}},
+    "required": ["prompt"],
+    "additionalProperties": False,
+}
+
+SCENE_EXAMPLES = [
+    ("<b>一応</b>聞いておくけど、明日は来るよね？", "一応", "I'll ask <b>just in case</b>, but you're coming tomorrow, right?",
+     "a young woman leaning toward her friend at a cafe table with a slightly doubtful, raised-eyebrow look"),
+]
+
 STYLE = ("simple flat vector illustration, clean thick outlines, soft pastel colors, plain white background, "
          "centered, no text")
 
@@ -78,11 +103,11 @@ def _parse(text):
     return prompt
 
 
-def ask_ollama(c, messages):
+def ask_ollama(c, messages, system=PROMPT_SYSTEM, schema=PROMPT_SCHEMA):
     body = {
         "model": c.get("PICTURE_PROMPT_MODEL") or c.get("OLLAMA_MODEL") or "gemma4:12b",
-        "messages": [{"role": "system", "content": PROMPT_SYSTEM}] + messages,
-        "format": PROMPT_SCHEMA,
+        "messages": [{"role": "system", "content": system}] + messages,
+        "format": schema,
         "stream": False,
         "think": False,
         "keep_alive": c.get("PICTURE_PROMPT_KEEP_ALIVE", "2m"),
@@ -107,9 +132,33 @@ def server_url(c):
     return (c.get("PICTURE_SERVER_URL") or "http://127.0.0.1:8189").rstrip("/")
 
 
+def scene_prompt(c, sentence, expression, translation="", meaning=""):
+    """English description of the sentence's situation (for words that cannot be pictured themselves)."""
+    msgs = []
+    for jp, word, en, prompt in SCENE_EXAMPLES:
+        msgs.append({"role": "user", "content": prompt_message(jp, word, en)})
+        msgs.append({"role": "assistant", "content": json.dumps({"prompt": prompt})})
+    msgs.append({"role": "user", "content": prompt_message(sentence, expression, translation, meaning)})
+    text = ask_ollama(c, msgs, SCENE_SYSTEM, SCENE_SCHEMA)
+    m = re.search(r"\{.*\}", text or "", re.S)
+    try:
+        prompt = (json.loads(m.group(0)).get("prompt") or "").strip() if m else ""
+    except ValueError:
+        prompt = ""
+    if not prompt:
+        raise PictureError(f"no scene description in answer: {(text or '')[:200]}")
+    return prompt
+
+
 def picture_prompt(c, sentence, expression, translation="", meaning=""):
-    """English scene description for the target word, or None if the word cannot be pictured."""
-    return _parse(ask_ollama(c, build_prompt_messages(sentence, expression, translation, meaning)))
+    """(prompt, kind): kind "word" for a picture of the word, "scene" for the sentence's situation when the word
+    cannot be pictured and PICTURE_UNDEPICTABLE is "scene"; (None, None) when the note is left as it is."""
+    p = _parse(ask_ollama(c, build_prompt_messages(sentence, expression, translation, meaning)))
+    if p:
+        return p, "word"
+    if (c.get("PICTURE_UNDEPICTABLE") or "scene") == "scene":
+        return scene_prompt(c, sentence, expression, translation, meaning), "scene"
+    return None, None
 
 
 def generate(c, prompt):

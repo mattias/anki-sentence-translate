@@ -61,6 +61,7 @@ SECTIONS = [
         ("PICTURE_SERVER_URL", "Picture server", "text", None),
         ("PICTURE_INSTALL_DIR", "Install folder (empty: the default folder)", "text", None),
         ("PICTURE_EMPTY_IF_FILE_CONTAINS", "Count images whose file name contains this as no picture (e.g. book covers)", "text", None),
+        ("PICTURE_UNDEPICTABLE", "Words that cannot be pictured (一応, だって): scene = draw the sentence's situation, leave = no picture", "choice", ["scene", "leave"]),
         ("PICTURE_IDLE_MINUTES", "Free the GPU after this many idle minutes", "int", (1, 120)),
         ("PICTURE_STYLE", "Style added to every picture", "text", None),
         ("PICTURE_SIZE", "Size in pixels", "int", (256, 1024)),
