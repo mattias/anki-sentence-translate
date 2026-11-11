@@ -1,22 +1,30 @@
 """Sentence Translate: translate the Sentence field to English with the target word in bold."""
+from anki import hooks
 from aqt import gui_hooks, mw
 from aqt.operations import CollectionOp, QueryOp
 from aqt.operations.note import update_note
-from aqt.qt import QAction, QMessageBox
+from aqt.qt import QAction, QMessageBox, QTimer
 from aqt.utils import showInfo, showWarning, tooltip
 
 from . import engines
 
 ADDON_NAME = "Sentence Translate"
+LANGUAGE_CODES = {
+    "english": "EN", "swedish": "SV", "german": "DE", "french": "FR", "spanish": "ES", "italian": "IT",
+    "portuguese": "PT", "russian": "RU", "dutch": "NL", "polish": "PL", "norwegian": "NO", "danish": "DA",
+    "finnish": "FI", "ukrainian": "UK", "turkish": "TR", "japanese": "JA", "chinese": "ZH", "korean": "KO",
+}
 
 
 def cfg():
-    return mw.addonManager.getConfig(__name__)
+    """User config on top of the defaults, so keys added in an update are always present."""
+    defaults = mw.addonManager.addonConfigDefaults(__name__) or {}
+    return {**defaults, **(mw.addonManager.getConfig(__name__) or {})}
 
 
 def engine_label(c):
     e = c.get("ENGINE", "claude")
-    model = {"claude": c.get("CLAUDE_MODEL"), "ollama": c.get("OLLAMA_MODEL"),
+    model = {"claude": c.get("CLAUDE_MODEL"), "gemini": c.get("GEMINI_MODEL"), "ollama": c.get("OLLAMA_MODEL"),
              "openai_compatible": c.get("OPENAI_COMPAT_MODEL")}.get(e, "")
     return f"{e} ({model})" if model else e
 
@@ -128,7 +136,7 @@ def run_browser(browser):
 
 
 def setup_browser_menu(browser):
-    action = QAction("Translate Sentence to English", browser)
+    action = QAction(f"Translate Sentence ({engines.languages(cfg())[1]})", browser)
     keys = cfg().get("BROWSER_SHORTCUT")
     if keys:
         action.setShortcut(keys)
@@ -185,32 +193,88 @@ def on_editor_saved(editor):
 
 def setup_editor_button(buttons, editor):
     keys = cfg().get("EDITOR_SHORTCUT") or None
-    tip = "Translate Sentence to English" + (f" ({keys})" if keys else "")
-    buttons.append(editor.addButton(None, "sentence_translate", on_editor_saved, tip=tip, label="EN", keys=keys))
+    target = engines.languages(cfg())[1]
+    tip = f"Translate Sentence into {target}" + (f" ({keys})" if keys else "")
+    label = LANGUAGE_CODES.get(target.lower(), "TR")
+    buttons.append(editor.addButton(None, "sentence_translate", on_editor_saved, tip=tip, label=label, keys=keys))
 
 
-# ---- Tools menu: test the engine ----
+# ---- New notes (Yomitan via AnkiConnect, the Add window): translate in the background ----
 
-def test_engine():
+_queue = []  # note ids waiting for translation
+_running = False
+
+
+def on_note_will_be_added(col, note, deck_id):
     c = cfg()
-    sample = ("あの店、<b>行列</b>ができてるね。", "行列")
+    if not c.get("AUTO_TRANSLATE_NEW") or note_input(c, note) is None:
+        return
+    if engines.plain(note[c["TARGET_FIELD"]]):
+        return
+    # The note has no id until it is added; look at it right after the add finishes.
+    mw.taskman.run_on_main(lambda: QTimer.singleShot(200, lambda: _enqueue(note)))
+
+
+def _enqueue(note):
+    if note.id:
+        _queue.append(note.id)
+        _drain()
+
+
+def _drain():
+    global _running
+    if _running or not _queue or mw.col is None:
+        return
+    nid = _queue.pop(0)
+    c = cfg()
+    try:
+        note = mw.col.get_note(nid)
+    except Exception:
+        return _drain()
+    inp = note_input(c, note)
+    if inp is None or engines.plain(note[c["TARGET_FIELD"]]):
+        return _drain()
+    _running = True
 
     def done(fut):
+        global _running
+        _running = False
         try:
-            showInfo(f"{engine_label(c)} works:\n\n{engines.plain(sample[0])}\n→ {fut.result()}")
+            text = fut.result()
         except Exception as e:
-            showWarning(f"{engine_label(c)} failed:\n\n{e}")
+            print(f"{ADDON_NAME}: new note {nid}: {e}")
+            tooltip(f"{ADDON_NAME}: translation failed for a new note ({str(e)[:80]})")
+            return _drain()
+        try:
+            fresh = mw.col.get_note(nid)
+        except Exception:
+            return _drain()
+        if not engines.plain(fresh[c["TARGET_FIELD"]]):  # the user may have typed one meanwhile
+            fresh[c["TARGET_FIELD"]] = text
+            if c.get("TAG"):
+                fresh.add_tag(c["TAG"])
+            update_note(parent=mw, note=fresh).run_in_background()
+        _drain()
 
-    tooltip(f"Testing {engine_label(c)}...")
-    mw.taskman.run_in_background(lambda: engines.translate(c, *sample), done)
+    mw.taskman.run_in_background(lambda: translate_one(c, inp), done)
+
+
+# ---- Tools menu and config ----
+
+def open_settings():
+    from .settings import open_settings as show
+
+    show(__name__)
 
 
 def setup_main_menu():
-    action = QAction(f"{ADDON_NAME}: test engine", mw)
-    action.triggered.connect(test_engine)
+    action = QAction(f"{ADDON_NAME} settings...", mw)
+    action.triggered.connect(open_settings)
     mw.form.menuTools.addAction(action)
 
 
+hooks.note_will_be_added.append(on_note_will_be_added)
 gui_hooks.browser_will_show.append(setup_browser_menu)
 gui_hooks.editor_did_init_buttons.append(setup_editor_button)
+mw.addonManager.setConfigAction(__name__, open_settings)
 setup_main_menu()
